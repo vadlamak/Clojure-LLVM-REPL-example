@@ -18,6 +18,7 @@
                 ["LLVMCreateBuilder" com.sun.jna.Pointer 0]
                 ["LLVMCreateExecutionEngineForModule" Integer 3]
                 ["LLVMDisposeBuilder" Void 1]
+                ["LLVMDisposeModule" Void 1]
                 ["LLVMDisposeMessage" Void 1]
                 ["LLVMDoubleType" com.sun.jna.Pointer 0]
                 ["LLVMFunctionType" com.sun.jna.Pointer 4]
