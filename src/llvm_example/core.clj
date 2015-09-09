@@ -63,7 +63,7 @@
 
 (def args (into-array [(LLVMDoubleType) (LLVMDoubleType)]))
 (def fn-type (LLVMFunctionType (LLVMDoubleType) args (count args) 0))
-(def llvm-fn (LLVMAddFunction llvm-mod "derp" fn-type))
+(def llvm-fn (LLVMAddFunction llvm-mod "average" fn-type))
 
 (def arg1 (LLVMGetParam llvm-fn 0))
 (def arg2 (LLVMGetParam llvm-fn 1))
@@ -78,7 +78,7 @@
 (println (LLVMPrintModuleToString llvm-mod))
 
 (def engine (create-execution-engine llvm-mod))
-(def fn-ptr (LLVMGetGlobalValueAddress engine "derp"))
+(def fn-ptr (LLVMGetGlobalValueAddress engine "average"))
 (def jna-fn (com.sun.jna.Function/getFunction fn-ptr))
 (println (.invoke jna-fn Double (into-array [3.0 8.0])))
 
