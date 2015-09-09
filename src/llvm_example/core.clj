@@ -18,6 +18,7 @@
                 ["LLVMCreateBuilder" com.sun.jna.Pointer 0]
                 ["LLVMCreateExecutionEngineForModule" Integer 3]
                 ["LLVMDisposeBuilder" Void 1]
+                ["LLVMDisposeExecutionEngine" Void 1]
                 ["LLVMDisposeModule" Void 1]
                 ["LLVMDisposeMessage" Void 1]
                 ["LLVMDoubleType" com.sun.jna.Pointer 0]
@@ -54,6 +55,19 @@
 (LLVMInitializeX86Target)
 (LLVMInitializeX86AsmPrinter)
 
+(defn build-averager-fn [llvm-module builder fn-name]
+  (let [args         (into-array [(LLVMDoubleType) (LLVMDoubleType)])
+        fn-type      (LLVMFunctionType (LLVMDoubleType) args (count args) 0)
+        llvm-fn      (LLVMAddFunction llvm-module fn-name fn-type)
+        entry        (LLVMAppendBasicBlock llvm-fn "entry")
+        _            (LLVMPositionBuilderAtEnd builder entry)
+        arg1         (LLVMGetParam llvm-fn 0)
+        arg2         (LLVMGetParam llvm-fn 1)
+        adder-result (LLVMBuildFAdd builder arg1 arg2 "")
+        const2       (LLVMConstReal (LLVMDoubleType) (double 2.0))
+        result       (LLVMBuildFDiv builder adder-result const2 "")]
+    (LLVMBuildRet builder result)
+    nil))
 
 (comment  ;; Run these commands at the REPL
 

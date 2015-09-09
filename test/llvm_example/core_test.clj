@@ -12,11 +12,33 @@
             (finally (LLVMDisposeBuilder ~builder))))
         (finally (LLVMDisposeModule ~llvm-module)))))
 
-(deftest test-example
+(deftest test-empty-module
   (with-llvm-module-builder llvm-module builder
-    (let [args (into-array [(LLVMDoubleType) (LLVMDoubleType)])
-          fn-type (LLVMFunctionType (LLVMDoubleType) args (count args) 0)
-          llvm-fn (LLVMAddFunction llvm-module "average" fn-type)]
-      (is (= "; ModuleID = 'test'\n\ndeclare double @average(double, double)\n"
-             (LLVMPrintModuleToString llvm-module))))))
+      (is (= "; ModuleID = 'test'\n"
+             (LLVMPrintModuleToString llvm-module)))))
+
+(deftest test-build-averager-fn-codegen
+  (with-llvm-module-builder llvm-module builder
+    (build-averager-fn llvm-module builder "average")
+    (is (= (str "; ModuleID = 'test'\n"
+                "\n"
+                "define double @average(double, double) {\n"
+                "entry:\n"
+                "  %2 = fadd double %0, %1\n"
+                "  %3 = fdiv double %2, 2.000000e+00\n"
+                "  ret double %3\n"
+                "}\n")
+           (LLVMPrintModuleToString llvm-module)))))
+
+(deftest test-build-avenger-fn-execution
+  (with-llvm-module-builder llvm-module builder
+    (build-averager-fn llvm-module builder "average")
+    (let [engine (create-execution-engine llvm-module)]
+      (try
+        (let [fn-ptr (LLVMGetGlobalValueAddress engine "average")
+              jna-fn (com.sun.jna.Function/getFunction fn-ptr)]
+          (is (= 5.5 (.invoke jna-fn Double (into-array [3.0 8.0])))))
+        (finally
+          ;(LLVMDisposeExecutionEngine engine)  ;; FIXME: blows up
+          )))))
 
