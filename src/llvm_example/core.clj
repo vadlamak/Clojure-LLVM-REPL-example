@@ -33,7 +33,25 @@
                 ["LLVMPrintModuleToString" String 1]
                 ["LLVMPrintValueToString" String 1]]]
   (doseq [[name ret-type num-args] llvm-api]
-    (import-c-func "LLVM-3.6" name ret-type num-args)))
+    (import-c-func "LLVM" name ret-type num-args)))
+
+(defn create-execution-engine [llvm-module]
+  (let [error-ref  (com.sun.jna.ptr.PointerByReference.)
+        engine-ref (com.sun.jna.ptr.PointerByReference.)
+        status     (LLVMCreateExecutionEngineForModule engine-ref llvm-module error-ref)
+        _          (if-not (= 0 status)
+                     (let [error (-> error-ref
+                                     (. getValue)
+                                     (. getString))]
+                       (LLVMDisposeMessage error-ref)
+                       (throw (Exception. (str "Failed to create LLVM execution engine: " error)))))
+        engine     (. engine-ref getValue)]
+    engine))
+
+(LLVMInitializeX86TargetInfo)
+(LLVMInitializeX86TargetMC)
+(LLVMInitializeX86Target)
+(LLVMInitializeX86AsmPrinter)
 
 
 (comment  ;; Run these commands at the REPL
@@ -58,26 +76,6 @@
 (LLVMBuildRet builder divider-result)
 (LLVMDisposeBuilder builder)
 (println (LLVMPrintModuleToString llvm-mod))
-
-
-(defn create-execution-engine [llvm-module]
-  (let [error-ref  (com.sun.jna.ptr.PointerByReference.)
-        engine-ref (com.sun.jna.ptr.PointerByReference.)
-        status     (LLVMCreateExecutionEngineForModule engine-ref llvm-module error-ref)
-        _          (if-not (= 0 status)
-                     (let [error (-> error-ref
-                                     (. getValue)
-                                     (. getString))]
-                       (LLVMDisposeMessage error-ref)
-                       (throw (Exception. (str "Failed to create LLVM execution engine: " error)))))
-        engine     (. engine-ref getValue)]
-    engine))
-
-(LLVMInitializeX86TargetInfo)
-(LLVMInitializeX86TargetMC)
-(LLVMInitializeX86Target)
-(LLVMInitializeX86AsmPrinter)
-
 
 (def engine (create-execution-engine llvm-mod))
 (def fn-ptr (LLVMGetGlobalValueAddress engine "derp"))
